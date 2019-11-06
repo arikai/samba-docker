@@ -47,13 +47,12 @@ _section () {
 # )
 
 
-
 fix_platform_in_manifest () {
     manifest_arch="$1"
     # manifest_arch=${docker_to_manifest_map[${arch}]}
 
     tempdir=$(mktemp -d -t yolo.XXXXXXXX)
-    cd "$tempdir"
+    cd "$tempdir" >&2
 
     # Unpack archive
     </dev/stdin tar xv
@@ -67,6 +66,7 @@ fix_platform_in_manifest () {
     done
 
     tar cv .
+    cd - >&2
     rm -rf "$tempdir"
 }
 

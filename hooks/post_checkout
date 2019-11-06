@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -eu
+source hooks/config
+
+_section "Install extra utils (jq and sponge)"
+apt-get -yqq install jq moreutils
+
+# Sadly docker itself uses Docker EE 17.06 on Dockerhub which does not support
+# manifests.
+_section "Install a fresh docker cli binary"
+
+docker_url="https://download.docker.com/linux/static/stable/x86_64/docker-18.09.1.tgz"
+curl "$docker_url" |
+    tar xvz docker/docker
+_header "Dir contents"
+ls -la
+
+
+# Manifests are still experimental and enabled by a config file flag.
+# Interestingly, there is no config file and the credential parts to push
+# images is available in an environment variable. Let's create a config file to
+# combine the two things:
+_section "Build a usable config.json file"
+
+mkdir -p ~/.docker
+<"$DOCKERCFG" |
+    jq --null-input --argjson auths  '. + {auths: $auths}' |
+    jq --arg experimental enabled '. + {experimental: $experimental}' |
+    sponge ~/.docker/config.json
+
+_header "Dir contents"
+ls -la
