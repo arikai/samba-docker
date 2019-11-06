@@ -2,6 +2,10 @@
 set -eu
 source hooks/config
 
+_section "SYSTEM INFO"
+uname -a
+test -f /etc/issue && cat /etc/issue
+
 
 DOCKER_REPO="${DOCKER_REPO:-arikai/samba}"
 DOCKER_TAG="${DOCKER_TAG:-latest}"
