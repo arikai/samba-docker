@@ -1,0 +1,73 @@
+# Source: https://github.com/rmoriz/multiarch-test/blob/master/hooks/.config
+
+export PATH="$PWD/docker:$PATH"
+
+# armhf = ARMv7, arm = ARMv6
+build_architectures=(
+    amd64   # x86_64 (64 bit)
+    aarch64 # ARMv8 (64 bit)
+    armhf   # ARMv7
+    arm     # ARMv6
+)
+
+# =>
+# https://hub.docker.com/u/arm64v8/
+# https://hub.docker.com/u/arm32v7/
+# https://hub.docker.com/u/arm32v6/
+declare -A base_image_prefix_map=(
+    ["amd64"]=""
+    ["aarch64"]="arm64v8/"
+    ["armhf"]="arm32v7/"
+    ["arm"]="arm32v6/"
+)
+
+# https://golang.org/doc/install/source#environment
+# => https://github.com/docker/docker-ce/blob/76ac3a4952a9c03f04f26fc88d3160acd51d1702/components/cli/cli/command/manifest/util.go#L22
+declare -A arch_to_goarch=(
+    ["amd64"]="amd64"
+    ["aarch64"]="arm64"
+    ["armhf"]="arm"
+    ["arm"]="arm"
+)
+
+_header () {
+    echo "# $1"
+}
+_section () {
+    echo "########################################"
+    echo "# $1"
+    echo "########################################"
+}
+
+# => dpkg -L qemu-user-static | grep /usr/bin/
+# declare -A docker_qemu_arch_map=(
+#     ["aarch64"]="aarch64"
+#     ["arm"]="arm"
+#     ["amd64"]="x86_64"
+# )
+
+
+
+fix_platform_in_manifest () {
+    manifest_arch="$1"
+    # manifest_arch=${docker_to_manifest_map[${arch}]}
+
+    tempdir=$(mktemp -d -t yolo.XXXXXXXX)
+    cd "$tempdir"
+
+    # Unpack archive
+    </dev/stdin tar xv
+
+    # Delete architecture from layers
+    for filename in */json; do
+        < "$filename" |
+            jq --compact-output --arg arch "$manifest_arch" \
+               'setpath(["architecture"]; $arch)' |
+            sponge "$filename"
+    done
+
+    tar cv .
+    rm -rf "$tempdir"
+}
+
+docker -v

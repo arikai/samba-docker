@@ -1,0 +1,50 @@
+#!/bin/bash
+set -eu
+source hooks/config
+
+
+DOCKER_REPO="${DOCKER_REPO:-arikai/samba}"
+DOCKER_TAG="${DOCKER_TAG:-latest}"
+ARCH="${ARCH:-${DOCKER_TAG:-amd64}}"
+VERSION="${VER:-`cat VERSION`}"
+
+BASE_IMAGE="${BASE_IMAGE:-alpine:3.7}"
+S6_VER="${S6_VER:-1.22.1.0}"
+VCS_REF="$(git rev-parse --short HEAD)"
+
+DOCKERFILE_PATH="${DOCKERFILE_PATH:-./Dockerfile}"
+
+_header "build"
+
+for arch in ${build_architectures[@]}; do
+    _section "building $arch"
+
+    BASE_IMAGE_PREFIX="${base_image_prefix_map[${arch}]}"
+    BASE_IMAGE_FULL="${BASE_IMAGE_PREFIX}${BASE_IMAGE}"
+    name="${DOCKER_REPO}:${DOCKER_TAG}-${arch}"
+    DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+    docker build \
+           --tag "${name}" \
+           --file "$DOCKERFILE_PATH" \
+           --build-arg BASE_IMAGE="${BASE_IMAGE_FULL}" \
+           --build-arg ARCH=${arch} \
+           --build-arg VERSION=${ARCH}_${VERSION} \
+           --build-arg BUILD_DATE="$DATE" \
+	         --build-arg S6_VER=${S6_VER} \
+           --build-arg VCS_REF="${VCS_REF}" \
+           .
+done
+
+_header "images build"
+docker image ls
+
+
+_section "Packing images to archives"
+for arch in ${build_architectures[@]}; do
+    manifest_arch=${arch_to_goarch[${arch}]}
+
+    docker save "${name}" |
+        fix_platform_in_manifest "$manifest_arch" |
+        docker load
+done

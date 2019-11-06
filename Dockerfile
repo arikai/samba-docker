@@ -8,20 +8,22 @@ ENV GID 1000
 
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
-ARG ARCH
-ARG S6_ARCH=amd64
+ARG VERSION=1.0.0
 ARG S6_VER=1.22.1.0
+ARG ARCH=${DOCKER_TAG}
+ARG DESC="Multiarch Samba for amd64 arm32v7 or arm64"
 
-LABEL mantainer="Yaroslav Rogov <rogovyaroslav@gmail.com>" \
-    org.label-schema.build-date=$BUILD_DATE \
-    org.label-schema.name="Samba" \
-    org.label-schema.description="Multiarch Samba for amd64 arm32v7 or arm64" \
-    org.label-schema.vcs-ref=$VCS_REF \
-    org.label-schema.vcs-url="https://github.com/arikai/samba_docker" \
-    org.label-schema.vendor="arikai" \
-    org.label-schema.version=$VERSION \
-    org.label-schema.schema-version="1.0"
+# TODO: move to OCI: https://github.com/opencontainers/image-spec
+LABEL \
+  mantainer="Yaroslav Rogov <rogovyaroslav@gmail.com>"              \
+  org.label-schema.build-date=$BUILD_DATE                           \
+  org.label-schema.name="Samba"                                     \
+  org.label-schema.description=${DESC}                              \
+  org.label-schema.vcs-ref=$VCS_REF                                 \
+  org.label-schema.vcs-url="https://github.com/arikai/samba_docker" \
+  org.label-schema.vendor="arikai"                                  \
+  org.label-schema.version=$VERSION                                 \
+  org.label-schema.schema-version="1.0"
 
 # Install Bash, Samba and OpenSSL
 RUN apk update && \
@@ -30,8 +32,8 @@ RUN apk update && \
   rm -rf /var/cache/apk/*
 
 # Add s6
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-${S6_ARCH}.tar.gz -C /
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${ARCH}.tar.gz /tmp/
+RUN tar xzf /tmp/s6-overlay-${ARCH}.tar.gz -C /
 
 
 COPY s6/config.init /etc/cont-init.d/00-config
